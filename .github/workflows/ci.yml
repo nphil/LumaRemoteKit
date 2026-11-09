@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Pinned: the image also carries a 27.2 release candidate, which a newest-first pick would choose.
+  DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+
+jobs:
+  package:
+    name: Package tests (macOS)
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Tests
+        run: swift test
+
+      # The protocol's byte vectors are written by LumaTV's Rust test client. Once LumaTV publishes
+      # them, any difference from the kit's copy is protocol drift and fails the run.
+      - name: Vectors match LumaTV
+        run: |
+          URL=https://raw.githubusercontent.com/nphil/lumatv/main/helper/remote/tests/vectors.json
+          STATUS=$(curl -sSL -o "$RUNNER_TEMP/vectors.json" -w '%{http_code}' "$URL")
+          if [ "$STATUS" = 404 ]; then
+            echo "::notice::LumaTV has not published helper/remote/tests/vectors.json yet; the kit's vectors are not cross-checked."
+            exit 0
+          fi
+          [ "$STATUS" = 200 ] || { echo "Fetching LumaTV's vectors failed with HTTP $STATUS."; exit 1; }
+          python3 - "$RUNNER_TEMP/vectors.json" Tests/LumaRemoteCoreTests/vectors.json <<'EOF'
+          import json, sys
+          theirs, ours = (json.load(open(path)) for path in sys.argv[1:])
+          if theirs != ours:
+              sys.exit("Tests/LumaRemoteCoreTests/vectors.json differs from LumaTV's helper/remote/tests/vectors.json.")
+          EOF
+
+  ios:
+    name: iOS build and tests
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      # Tests launched right after the simulator boots can stall on this runner image, so it boots
+      # first and the tests wait for it to settle while the build runs.
+      - name: Boot simulator
+        id: simulator
+        run: |
+          UDID=$(xcrun simctl list -j devices available | python3 -c '
+          import json, sys
+          for runtime, devices in json.load(sys.stdin)["devices"].items():
+              if runtime.endswith("iOS-27-0"):
+                  for device in devices:
+                      if device["name"] == "iPhone 18 Pro":
+                          print(device["udid"])
+                          raise SystemExit
+          raise SystemExit("No iPhone 18 Pro simulator on iOS 27.0")
+          ')
+          xcrun simctl boot "$UDID"
+          date +%s > "$RUNNER_TEMP/booted-at"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing -scheme LumaRemoteKit-Package -destination "id=$UDID" 2>&1 | xcbeautify
+
+      - name: Tests
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -o pipefail
+          xcrun simctl bootstatus "$UDID" -b
+          SETTLE=$(( $(cat "$RUNNER_TEMP/booted-at") + 120 - $(date +%s) ))
+          if [ "$SETTLE" -gt 0 ]; then sleep "$SETTLE"; fi
+          xcodebuild test-without-building -scheme LumaRemoteKit-Package -destination "id=$UDID" \
+            -only-testing:LumaRemoteCoreTests -only-testing:LumaRemoteKitTests 2>&1 | xcbeautify
