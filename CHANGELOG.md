@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.2
+
+- A closing connection sends what is still queued first; the fake TV's reply to pairing was being dropped on
+  real sockets.
+
 ## 1.0.1
 
 - A pairing link confirms on the remote itself rather than in a sheet, so pairing no longer closes a host's

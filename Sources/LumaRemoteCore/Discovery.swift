@@ -185,8 +185,13 @@ public final class TCPStream: ByteStream {
         }
     }
 
+    /// Sends what is still queued, then ends the connection: `cancel()` alone drops queued sends, such as
+    /// a TV's last reply before it hangs up.
     public func close() {
-        connection.cancel()
+        guard case .ready = connection.state else { return connection.cancel() }
+        connection.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed { [connection] _ in
+            connection.cancel()
+        })
     }
 
     public var remoteAddress: (host: String, port: UInt16)? {
