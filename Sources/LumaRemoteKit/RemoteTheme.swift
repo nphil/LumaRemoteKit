@@ -85,12 +85,15 @@ public struct RemoteTheme: Sendable {
         public var medium: String?
         public var semibold: String?
         public var bold: String?
+        /// Whether the cuts set only titles (`.largeTitle` to `.title3`) and the rest stays in the system font.
+        public var titlesOnly: Bool
 
-        public init(regular: String? = nil, medium: String? = nil, semibold: String? = nil, bold: String? = nil) {
+        public init(regular: String? = nil, medium: String? = nil, semibold: String? = nil, bold: String? = nil, titlesOnly: Bool = false) {
             self.regular = regular
             self.medium = medium
             self.semibold = semibold
             self.bold = bold
+            self.titlesOnly = titlesOnly
         }
     }
 
@@ -111,7 +114,9 @@ public struct RemoteTheme: Sendable {
 
     /// The host's typeface at a text style's size, scaling with Dynamic Type.
     public func font(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        let isTitle = ([.largeTitle, .title, .title2, .title3] as [Font.TextStyle]).contains(style)
         let name: String? = switch weight {
+        case _ where typefaces.titlesOnly && !isTitle: nil
         case .bold, .heavy, .black: typefaces.bold
         case .semibold: typefaces.semibold
         case .medium: typefaces.medium

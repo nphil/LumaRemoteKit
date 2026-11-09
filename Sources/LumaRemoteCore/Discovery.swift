@@ -137,7 +137,7 @@ public final class TCPStream: ByteStream {
         let settled = Locked(false)
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                func settle(_ result: Result<Void, Error>) {
+                @Sendable func settle(_ result: Result<Void, Error>) {
                     guard settled.withLock({ done in defer { done = true }; return !done }) else { return }
                     continuation.resume(with: result)
                 }
