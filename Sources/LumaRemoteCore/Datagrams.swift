@@ -114,7 +114,7 @@ public struct PointerReport: Sendable, Hashable {
     /// Presses since the session began, wrapping.
     public var leftPresses: UInt8 = 0
     public var rightPresses: UInt8 = 0
-    /// Each step puts the pointer at the centre.
+    /// Centring requests, wrapping; the TV centres the pointer once for any change.
     public var centres: UInt8 = 0
     public var flags: Flags = []
 
@@ -243,6 +243,8 @@ public struct PointerAccumulator: Sendable {
 
 /// What the TV does with one accepted pointer datagram, in order.
 public enum PointerEvent: Sendable, Hashable, CustomStringConvertible {
+    /// The pointer shows (true) or is let go (false), following the `engaged` flag.
+    case engaged(Bool)
     case centre
     /// In 1/16 px.
     case move(dx: Int32, dy: Int32)
@@ -254,6 +256,7 @@ public enum PointerEvent: Sendable, Hashable, CustomStringConvertible {
 
     public var description: String {
         switch self {
+        case .engaged(let on): "engaged \(on ? "on" : "off")"
         case .centre: "centre"
         case .move(let dx, let dy): "move \(dx) \(dy)"
         case .scroll(let dx, let dy): "scroll \(dx) \(dy)"
@@ -264,8 +267,9 @@ public enum PointerEvent: Sendable, Hashable, CustomStringConvertible {
     }
 }
 
-/// The TV's side of the totals: turns each accepted datagram into events from the difference to the
-/// last accepted one (wrapping subtraction). Used by the fake TV and to check the vectors.
+/// The TV's side of the totals, as LumaTV's engine applies them: turns each accepted datagram into
+/// events from the difference to the last accepted one (wrapping subtraction). Used by the fake TV and
+/// to check the vectors.
 public struct PointerApplier: Sendable {
     /// At most 4,096 px per datagram on each axis, in 1/16 px.
     public static let motionLimit: Int32 = 4096 * 16
@@ -277,12 +281,17 @@ public struct PointerApplier: Sendable {
         self.last = last
     }
 
+    /// Newly engaged first, then one centre for any change of the count, motion, scroll, each button,
+    /// and newly let go last.
     public mutating func apply(_ report: PointerReport) -> [PointerEvent] {
         var events: [PointerEvent] = []
-        for _ in 0..<(report.centres &- last.centres) { events.append(.centre) }
-        let dx = Self.clamp(report.x &- last.x)
-        let dy = Self.clamp(report.y &- last.y)
-        if dx != 0 || dy != 0 { events.append(.move(dx: dx, dy: dy)) }
+        let engaged = report.flags.contains(.engaged)
+        let wasEngaged = last.flags.contains(.engaged)
+        if engaged && !wasEngaged { events.append(.engaged(true)) }
+        if report.centres != last.centres { events.append(.centre) }
+        let dx = report.x &- last.x
+        let dy = report.y &- last.y
+        if dx != 0 || dy != 0 { events.append(.move(dx: Self.clamp(dx), dy: Self.clamp(dy))) }
         let sx = report.scrollX &- last.scrollX
         let sy = report.scrollY &- last.scrollY
         if sx != 0 || sy != 0 { events.append(.scroll(dx: sx, dy: sy)) }
@@ -290,20 +299,17 @@ public struct PointerApplier: Sendable {
                                     held: report.held.contains(.left), wasHeld: last.held.contains(.left))
         events += Self.buttonEvents(.right, presses: report.rightPresses &- last.rightPresses,
                                     held: report.held.contains(.right), wasHeld: last.held.contains(.right))
+        if !engaged && wasEngaged { events.append(.engaged(false)) }
         last = report
         return events
     }
 
-    /// k presses since the last datagram: k clicks with the bit clear, k − 1 clicks and a press with it
-    /// set, a release when the bit is newly clear. A button still down from before is released first
-    /// when it has been pressed again since.
+    /// k presses since the last datagram: k clicks with the button up, k − 1 clicks and a press with it
+    /// held; no presses and the button newly up, a release.
     private static func buttonEvents(_ button: PointerButton, presses: UInt8, held: Bool, wasHeld: Bool) -> [PointerEvent] {
-        var events: [PointerEvent] = []
-        if wasHeld && (presses > 0 || !held) { events.append(.release(button)) }
-        guard presses > 0 else { return events }
-        for _ in 0..<(held ? presses - 1 : presses) { events.append(.click(button)) }
-        if held { events.append(.press(button)) }
-        return events
+        guard presses > 0 else { return wasHeld && !held ? [.release(button)] : [] }
+        let clicks = [PointerEvent](repeating: .click(button), count: Int(held ? presses - 1 : presses))
+        return held ? clicks + [.press(button)] : clicks
     }
 
     private static func clamp(_ delta: Int32) -> Int32 {

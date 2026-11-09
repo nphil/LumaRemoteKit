@@ -1,329 +1,630 @@
 {
-  "version": 1,
-  "pairing_keys": [
-    {
-      "code": "ABCD2345",
-      "tv": "0011223344556677",
-      "key": "de33c4bbab0025673b0481ff5b860286c9eb9b58666ec36f71ab6f57d54064ab"
-    },
-    {
-      "code": "Z9XY8WV7",
-      "tv": "5a1c0ffee0ddba11",
-      "key": "c67aeb84a01f4d3d112cfa25bcc71d9a39edc3000b9e264047b1338d8efba307"
-    }
-  ],
+  "datagrams": {
+    "items": [
+      {
+        "direction": 0,
+        "header": "4c5201010403020101000000",
+        "kind": 1,
+        "nonce": "4c5200000100000000000000",
+        "packet": "4c52010104030201010000009b02cb714d2fa3c8051fdf9622eef57b4ef6f2c1e17aec55764ec60be573cf4f5b42290d22b85ab7",
+        "plain": "20000000f0ffffff00000000000000000101000001000000",
+        "seq": 1
+      },
+      {
+        "direction": 0,
+        "header": "4c5201020403020102000000",
+        "kind": 2,
+        "nonce": "4c5200000200000000000000",
+        "packet": "4c520102040302010200000020e70f798602a714ec21b721bab7d6dba23c150fefe9725b6c8f3edb",
+        "plain": "07000000d202964900000000",
+        "seq": 2
+      },
+      {
+        "direction": 1,
+        "header": "4c5201030403020101000000",
+        "kind": 3,
+        "nonce": "4c5201000100000000000000",
+        "packet": "4c52010304030201010000004ea82fcb70a838df83c60d32660fe65fd85dd01a1685cbf2777432306281cd9a",
+        "plain": "07000000d202964900000000fa000000",
+        "seq": 1
+      }
+    ],
+    "key": "4242424242424242424242424242424242424242424242424242424242424242",
+    "session": 16909060
+  },
   "handshakes": [
     {
+      "frames": [
+        {
+          "frame": "6900869ba4db44f01af097d5af6f9b1b07c941bd9c1aa3c5f8421ea3e1e97e4e842c5552f277f0ae8e16d3d8f10b3e263c1a4b8c9cc869f0f23f0987d88f22309df8abb0659190b4a31c5f48d1388471cc740020cfcdb6ee8ae8de7ef5feb83bfed9d58cd4a64073c7a022",
+          "from": "phone",
+          "json": "{\"t\":\"hello\",\"name\":\"Test phone\",\"model\":\"iPhone17,1\",\"app\":\"LumaRemote 1.0\",\"kit\":\"1.0\"}"
+        },
+        {
+          "frame": "9a01f44b0d33154a2d295dd532e12bb3f095f502e010b57095fa7da587e788a39194c88aeb7649273b46c3193fa47e95ef6e8c0c7a8a5ab3ccbbed21ef83c30be86aefb2a6ab295faeb0fe8e9f0eb8bc4f12c96dded2614cc2a726c942421e0c29f3e73d8c142b9b9e995fe951130ecdcf1941541d92db3b8dc339332b85c7190f28dc2e5c72034e655ed8b731ba5e0b91af2f7c6d3cf475b5bfe80facba8f46ab9d8f8f66a83fee6af366dfa77dd1b5d5e73be75f4c0558ecb52cfbeafb81b0109d8b405f8e6601fea5d50c071a92c18bbcffb49c00773e43764d28255d2608b19b7183ef9c1683e868efdc357cdf80330a06e23252f7070996dd01b8b0b0cff2a3355da5fd911b988a45541480b34c9e55c0a08f0f2383ab288f34f6cf272300404bfdbcd15ecb1342c1a6438dcbf933b756a33de61ac52f64143aa4d7739b12d2186a53116d8e3d93f1eaa50a3c1120ef0d3788396639287f72bd22c7a377149fa7a99387e747db8d7b78cbdff32f1dbe94bc345922395e1e7ff7dc02c9a45ed88bcedd7a6778a92cb505773443792df8d0ea1420fa37e98861f2",
+          "from": "tv",
+          "json": "{\"t\":\"welcome\",\"v\":1,\"device\":\"0123456789abcdef\",\"tv\":{\"id\":\"0a010203040506ff\",\"name\":\"LG C4\",\"mac\":\"74:c1:7e:bd:ae:30\",\"accent\":\"#5b8cff\"},\"udp\":{\"session\":16909060,\"key\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\"},\"state\":{\"power\":\"on\",\"fg\":\"\",\"ime\":{\"active\":false},\"volume\":{\"via\":\"receiver\",\"level\":40,\"max\":98,\"muted\":false},\"acts\":[\"home\",\"quick\",\"input\",\"launch\",\"volume\",\"power\"]}}"
+        },
+        {
+          "frame": "2e00e2da15116b54b309253ac6044af9e69011253bfbe6e3cf89bfe6ade0923e6f9ac2d424fbc22c477b4f5e5cf5a7d9",
+          "from": "phone",
+          "json": "{\"t\":\"key\",\"k\":\"ok\",\"a\":\"tap\"}"
+        },
+        {
+          "frame": "36005febffa4a5f0175800bd2598203bf2814b585ffa0db6c3848f3990e4921692187ab96ea70568410b8f6824dc27940eecfcccec6f017a",
+          "from": "tv",
+          "json": "{\"t\":\"state\",\"fg\":\"com.beb.plxnative\"}"
+        }
+      ],
+      "message1": "79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af85a51a0a64d8a61b7aab93f7d97ba55b567d8f",
+      "message2": "493e82fc74464a59268817623d2053c5eb8e2cc4a988b4fee179ec6b010d531de4b4466c503ed4d8a740cb394b37b8e4",
       "mode": "session",
+      "phone_ephemeral": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
       "preamble": "4c524d540101",
-      "psk": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa55555555555555555555555555555555",
-      "initiator_ephemeral": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-      "responder_ephemeral": "2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
-      "message1": "07a37cbc142093c8b755dc1b10e86cb426374ad16aa853ed0bdfc0b2b86d1c7cf0766dd1dbb8e26860025998fb4dbdc5",
-      "message2": "5869aff450549732cbaaed5e5df9b30a6da31cb0e5742bad5ad4a1a768f1a67b046845f436255a5f647c6ce9fa6d20b5",
-      "phone_to_tv": [
-        {
-          "plaintext": "{\"t\":\"hello\",\"name\":\"Living room iPhone\",\"model\":\"iPhone17,1\",\"app\":\"Marquee 0.1\",\"kit\":\"LumaRemoteKit 1.0.0\"}",
-          "frame": "7e00f2bb230189f86d8ded48f9ad090690612f9937f4a49b825d8fc0344b1eb193080b6fd863ea481f2eee88af64da861b73af381ca60f9979d34e8e34ccae136593266d32350b5261a04af76cf6e583d61e825ca965239fc85248b62a6498df4997960b3b2c1cf163edb58eade05c72dac5e7c543287d42062411b34f79a5cc"
-        },
-        {
-          "plaintext": "{\"t\":\"key\",\"k\":\"volup\",\"a\":\"down\"}",
-          "frame": "32001ca4e0b569f5d30a46b4d7c02b46f76036c2e23da566d873a4bdbb846acae45c51224d9ffc84449e98a9d308530b5d42dbd2"
-        },
-        {
-          "plaintext": "{\"t\":\"text\",\"s\":\"héllo\"}",
-          "frame": "29008a2e0c10c93fa532c854bc9cc074550b17f0e4fbb182f37002378dc661ee2209525769bc711047ac14"
-        }
-      ],
-      "tv_to_phone": [
-        {
-          "plaintext": "{\"t\":\"welcome\",\"v\":1,\"device\":\"0102030405060708\",\"tv\":{\"id\":\"5a1c0ffee0ddba11\",\"name\":\"LG C4\",\"mac\":\"74:c1:7e:bd:ae:30\",\"accent\":\"#c8a2ff\"},\"udp\":{\"session\":3735928559,\"key\":\"ZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoM=\"},\"state\":{\"power\":\"on\",\"fg\":\"com.beb.plxnative\",\"ime\":{\"active\":false},\"volume\":{\"via\":\"receiver\",\"level\":38,\"max\":100,\"muted\":false},\"acts\":[\"home\",\"quick\",\"settings\",\"guide\",\"input\",\"pictureoff\",\"power\"]}}",
-          "frame": "bc016a650ec16656da5c81b64c97376817f5bdef02a834569fea35a7e286bfc4d9fd9057a4ccd971afff17b5c1f4f866acb470d71be125dffb79a2f2057339ce7d5cba3761aa28fe9ec11d3a587340e98ab2d19291ba7f1c04e6f9c5c3a2ab1191be17349561f49f0182e780ed94501cbec454afc4508b624b892cdfb6177fc7920ce345087239802e4c15541bdbca0715dc2513e5b1e2f5adfebecb0ef7964c8d1094249914989b40fe490e4aacb79e6ca757cf16279a65a9f1ea96b5fdd10a13bff2587564567273993daa60a1346a3ccc44170155fe4f9fd6e313040e6e15bdac5500172f256af52b047d894736b461df2b00ff9f95ce313b0a0680b9119c4aa21381083dba17d9d5a7a2745db3852e447ed2f2147261565979ac2e7675540ee157dbf072245cfec304aa58639c1c2f52f1ea319d7e0561107433899f5d8c6cc2c97d9aeedf3399237e7797f17f1ce5e330a0f30f15dcf424c60c02ed75b44339ade914c70316faa92faa330cd05ebf6a72f85961b6880026f57d4ca8b67705434b9603835544d1c695bc91eb23b18adfc9ce9021ec6e806967a4a7f185ebeb45db9f315bd0572572b96951fb90ffeaca2e03207e8b76b69d7eaa0313"
-        },
-        {
-          "plaintext": "{\"t\":\"state\",\"ime\":{\"active\":true,\"owner\":\"app\",\"purpose\":6,\"hint\":8,\"enter\":5,\"max\":0,\"text\":false}}",
-          "frame": "75004e8d5515c7ce56894b811793ea21b74a011baf1de1aa3bbe54bd013b12737a80df0113a11d8051c7db61d2f950b574b401e96127a7ddd486de48077dfe7d033566d01134bc661867b9d5f0242b75c9562c7da042ed2066213286a5dc7fa31ccfe0e6feb34303923063191ad9dc4e99163d063d53e5"
-        }
-      ]
+      "psk": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "tv_ephemeral": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f"
     },
     {
-      "mode": "pairing",
+      "frames": [
+        {
+          "frame": "5c0069dad9200b7170630ee911c495e4300b7feadcfec9a2bc17ab9443d10eda09d6c1d969aa9742835c9581aeebca24cd8dbf6ec29ae160c89e868434abb30869fec220462bd0b3cfdf30fc7169e9837e7cae2db7590dec081afe823ac3",
+          "from": "phone",
+          "json": "{\"t\":\"pair\",\"name\":\"Test phone\",\"model\":\"iPhone17,1\",\"app\":\"LumaRemote 1.0\"}"
+        },
+        {
+          "frame": "b700b9b80d3788d040086611e325388038dd6304ec494e1f789dfa8d1774527e3e895ad81c9679bcf4a2c218b3778f956bbaaca34ce1f0353b35830240d0edd8382afb9e67dcefd2e589d2b1fe3a39fb8485b785ccc594e6b0fe27bf27d1619369f8881ec5c8733cb670f4f60ecbaaa0f0824174e398dfabdc8192493b6f8c62dd324670e09f4ac4d2002c9e9c9d6c910c8871b435e6e39d5ff9a8c214e9b0b233b26f9092090f7fe9028812d589f03e55a1c6643a16719ada",
+          "from": "tv",
+          "json": "{\"t\":\"paired\",\"device\":\"0123456789abcdef\",\"key\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=\",\"tv\":{\"id\":\"0a010203040506ff\",\"name\":\"LG C4\",\"mac\":\"74:c1:7e:bd:ae:30\"}}"
+        }
+      ],
+      "message1": "79a631eede1bf9c98f12032cdeadd0e7a079398fc786b88cc846ec89af85a51a3e61034b041e9e3580547fac3a222f1d",
+      "message2": "493e82fc74464a59268817623d2053c5eb8e2cc4a988b4fee179ec6b010d531d07ee7dcff8d1dfdda4ceef0fe8b1e60c",
+      "mode": "pair",
+      "phone_ephemeral": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
       "preamble": "4c524d540102",
-      "psk": "c67aeb84a01f4d3d112cfa25bcc71d9a39edc3000b9e264047b1338d8efba307",
-      "initiator_ephemeral": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-      "responder_ephemeral": "2122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
-      "message1": "07a37cbc142093c8b755dc1b10e86cb426374ad16aa853ed0bdfc0b2b86d1c7c3861153466b3c3a50b6a1e5fbdb4cae9",
-      "message2": "5869aff450549732cbaaed5e5df9b30a6da31cb0e5742bad5ad4a1a768f1a67b3b592e153a0a1cabc20e3f9206e56b4d",
-      "phone_to_tv": [
-        {
-          "plaintext": "{\"t\":\"pair\",\"name\":\"Living room iPhone\",\"model\":\"iPhone17,1\",\"app\":\"Marquee 0.1\"}",
-          "frame": "6100292ffae69e174537f2a3a722b2baf69d8028977695c49f0fc2084fb0df91e89e6c743c3530af7cdd60f84c497a620f914ff1a8988ec2d8d68caf19cccf0cb9a337ae70052aef5dc8cee8f8d3e1deaccff473c16fc2a51bc02b67aae59272dbe841"
-        }
-      ],
-      "tv_to_phone": [
-        {
-          "plaintext": "{\"t\":\"paired\",\"device\":\"0102030405060708\",\"key\":\"qqqqqqqqqqqqqqqqqqqqqlVVVVVVVVVVVVVVVVVVVVU=\",\"tv\":{\"id\":\"5a1c0ffee0ddba11\",\"name\":\"LG C4\",\"mac\":\"74:c1:7e:bd:ae:30\"}}",
-          "frame": "b70085f272dc86e59600edc1ebfd14bd8cb661be00100e448ccd8b9873608ac3cb98bb82f182a4beb21b4c61c1c546fcda6d5a2d69b906e0f54bb6aac9758288e7eddee95e5a0fce4c0ac0037675f9255c5c780a1c8bec50eeb9773d998062795da2382cfde4b631e1896ebda8927c38c36eb32c00c4d02bdbbbe1d5700edec27873694c9fdced1a6eaa230e11246ed63ef848821ea403f8727281f1ba84f01ec2d27a6a320c73bd0a1a403f7a43be00a7bccf5691eb46e429"
-        }
-      ]
+      "psk": "39bd4a6478116d1ded2e43ae8ab876ad238ee67681710a648e651f904ba9dc5f",
+      "tv_ephemeral": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f"
     }
   ],
-  "datagrams": [
+  "pairing": [
     {
-      "key": "6465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80818283",
-      "direction": 0,
-      "kind": 1,
-      "session": 3735928559,
-      "sequence": 1,
-      "body": "a0000000d0ffffff00000000000000000101000001000000",
-      "datagram": "4c520101efbeadde010000000e52d5b63c50bf2f24eadb31b007ff0c794ce60d1130867b56e95af1bd0507ad0b323c62ce6cdfed"
+      "code": "K7WDX2AB",
+      "display": "K7WD-X2AB",
+      "key": "39bd4a6478116d1ded2e43ae8ab876ad238ee67681710a648e651f904ba9dc5f",
+      "tv": "0a010203040506ff",
+      "typed": "k7wd-x2ab"
     },
     {
-      "key": "6465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80818283",
-      "direction": 0,
-      "kind": 2,
-      "session": 3735928559,
-      "sequence": 2,
-      "body": "0700000015cd5b0700000000",
-      "datagram": "4c520102efbeadde02000000270d2d06b5fee25fd1d063f484006ae7f9ed2038edecb449afba402a"
+      "code": "23456789",
+      "display": "2345-6789",
+      "key": "bb9f069a09f0f5fbbf521989c1c2fb34b2ab44933bb5bf3d08c4bece091c8ef2",
+      "tv": "0000000000000000",
+      "typed": "2345 6789"
     },
     {
-      "key": "6465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80818283",
-      "direction": 1,
-      "kind": 3,
-      "session": 3735928559,
-      "sequence": 1,
-      "body": "0700000015cd5b070000000052030000",
-      "datagram": "4c520103efbeadde01000000e39bac7142959c503d8f3380d7d1cb297cc73380f670ddcda73c695dde5466ea"
+      "code": "ZZZZZZZZ",
+      "display": "ZZZZ-ZZZZ",
+      "key": "3587021b707cea505a1728c982f09a46c6e6b6dbcb9de5c15e434caeed3f7ee4",
+      "tv": "ffffffffffffffff",
+      "typed": "ZZZZ-ZZZZ"
     }
   ],
-  "pointer_sequences": [
+  "pointer": [
     {
-      "name": "move, click, drag",
-      "reports": [
-        {
-          "x": 16,
-          "y": 32,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 0,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "100000002000000000000000000000000000000001000000",
-          "events": [
-            "move 16 32"
-          ]
-        },
-        {
-          "x": 48,
-          "y": 32,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 1,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "300000002000000000000000000000000001000001000000",
-          "events": [
-            "move 32 0",
-            "click left"
-          ]
-        },
-        {
-          "x": 48,
-          "y": 32,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 1,
-          "left": 2,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "300000002000000000000000000000000102000001000000",
-          "events": [
-            "press left"
-          ]
-        },
-        {
-          "x": 80,
-          "y": 0,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 1,
-          "left": 2,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "500000000000000000000000000000000102000001000000",
-          "events": [
-            "move 32 -32"
-          ]
-        },
-        {
-          "x": 80,
-          "y": 0,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 2,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "500000000000000000000000000000000002000001000000",
-          "events": [
-            "release left"
-          ]
-        },
-        {
-          "x": 80,
-          "y": 0,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 2,
-          "right": 0,
-          "centres": 0,
-          "flags": 0,
-          "bytes": "500000000000000000000000000000000002000000000000",
-          "events": []
-        }
-      ]
-    },
-    {
-      "name": "lost datagrams",
-      "reports": [
-        {
-          "x": 100,
-          "y": 0,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 0,
-          "right": 0,
-          "centres": 0,
-          "flags": 1,
-          "bytes": "640000000000000000000000000000000000000001000000",
-          "events": [
-            "move 100 0"
-          ]
-        },
-        {
-          "x": 400,
-          "y": -200,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 3,
-          "right": 0,
-          "centres": 2,
-          "flags": 1,
-          "bytes": "9001000038ffffff00000000000000000003000201000000",
-          "events": [
-            "centre",
-            "centre",
-            "move 300 -200",
-            "click left",
-            "click left",
-            "click left"
-          ]
-        },
-        {
-          "x": 400,
-          "y": -200,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 1,
-          "left": 5,
-          "right": 0,
-          "centres": 2,
-          "flags": 1,
-          "bytes": "9001000038ffffff00000000000000000105000201000000",
-          "events": [
-            "click left",
-            "press left"
-          ]
-        },
-        {
-          "x": 400,
-          "y": -200,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 1,
-          "left": 7,
-          "right": 0,
-          "centres": 2,
-          "flags": 1,
-          "bytes": "9001000038ffffff00000000000000000107000201000000",
-          "events": [
-            "release left",
-            "click left",
-            "press left"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "wrap-around",
-      "reports": [
-        {
-          "x": -2147483628,
-          "y": 2147483645,
-          "scroll_x": -2147483633,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 1,
-          "right": 1,
-          "centres": 1,
-          "flags": 2,
-          "bytes": "14000080fdffff7f0f000080000000000001010102000000",
-          "events": [
-            "centre",
-            "centre",
-            "move 30 -8",
-            "scroll 16 0",
-            "click left",
-            "click left",
-            "click right",
-            "click right",
-            "click right"
-          ]
-        }
-      ],
+      "name": "click-drag",
       "start": {
-        "x": 2147483638,
-        "y": -2147483643,
-        "scroll_x": 2147483647,
+        "buttons": 0,
+        "centre": 0,
+        "flags": 0,
+        "left": 0,
+        "right": 0,
+        "scroll_x": 0,
         "scroll_y": 0,
-        "held": 0,
-        "left": 255,
-        "right": 254,
-        "centres": 255,
-        "flags": 2,
-        "bytes": "f6ffff7f05000080ffffff7f0000000000fffeff02000000"
-      }
+        "x": 0,
+        "y": 0
+      },
+      "steps": [
+        {
+          "events": [
+            {
+              "e": "engaged",
+              "on": true
+            }
+          ],
+          "plain": "000000000000000000000000000000000000000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "dx": 160,
+              "dy": 80,
+              "e": "move"
+            }
+          ],
+          "plain": "a00000005000000000000000000000000000000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 160,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "left",
+              "e": "press"
+            }
+          ],
+          "plain": "a00000005000000000000000000000000101000001000000",
+          "totals": {
+            "buttons": 1,
+            "centre": 0,
+            "flags": 1,
+            "left": 1,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 160,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "dx": 320,
+              "dy": 0,
+              "e": "move"
+            }
+          ],
+          "plain": "e00100005000000000000000000000000101000001000000",
+          "totals": {
+            "buttons": 1,
+            "centre": 0,
+            "flags": 1,
+            "left": 1,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 480,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "left",
+              "e": "release"
+            }
+          ],
+          "plain": "e00100005000000000000000000000000001000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 1,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 480,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "left",
+              "e": "click"
+            }
+          ],
+          "plain": "e00100005000000000000000000000000002000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 480,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "e": "centre"
+            }
+          ],
+          "plain": "e00100005000000000000000000000000002000101000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 1,
+            "flags": 1,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 480,
+            "y": 80
+          }
+        },
+        {
+          "events": [
+            {
+              "e": "engaged",
+              "on": false
+            }
+          ],
+          "plain": "e00100005000000000000000000000000002000100000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 1,
+            "flags": 0,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 480,
+            "y": 80
+          }
+        }
+      ]
     },
     {
-      "name": "motion clamp",
-      "reports": [
+      "name": "scroll-right-button",
+      "start": {
+        "buttons": 0,
+        "centre": 0,
+        "flags": 0,
+        "left": 0,
+        "right": 0,
+        "scroll_x": 0,
+        "scroll_y": 0,
+        "x": 0,
+        "y": 0
+      },
+      "steps": [
         {
-          "x": 1120000,
-          "y": -1440000,
-          "scroll_x": 0,
-          "scroll_y": 0,
-          "held": 0,
-          "left": 0,
-          "right": 0,
-          "centres": 0,
-          "flags": 0,
-          "bytes": "001711000007eaff00000000000000000000000000000000",
           "events": [
-            "move 65536 -65536"
-          ]
+            {
+              "e": "engaged",
+              "on": true
+            }
+          ],
+          "plain": "000000000000000000000000000000000000000003000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 3,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "dx": 0,
+              "dy": 320,
+              "e": "scroll"
+            }
+          ],
+          "plain": "000000000000000000000000400100000000000003000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 3,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "dx": -48,
+              "dy": 0,
+              "e": "scroll"
+            }
+          ],
+          "plain": "0000000000000000d0ffffff400100000000000003000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 3,
+            "left": 0,
+            "right": 0,
+            "scroll_x": -48,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [],
+          "plain": "0000000000000000d0ffffff400100000000000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 0,
+            "scroll_x": -48,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "right",
+              "e": "click"
+            }
+          ],
+          "plain": "0000000000000000d0ffffff400100000000010001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 1,
+            "scroll_x": -48,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "right",
+              "e": "press"
+            }
+          ],
+          "plain": "0000000000000000d0ffffff400100000200020001000000",
+          "totals": {
+            "buttons": 2,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 2,
+            "scroll_x": -48,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "right",
+              "e": "release"
+            }
+          ],
+          "plain": "0000000000000000d0ffffff400100000000020001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 2,
+            "scroll_x": -48,
+            "scroll_y": 320,
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrap",
+      "start": {
+        "buttons": 0,
+        "centre": 255,
+        "flags": 1,
+        "left": 254,
+        "right": 0,
+        "scroll_x": 0,
+        "scroll_y": 2147483647,
+        "x": 2147483047,
+        "y": -2147483048
+      },
+      "steps": [
+        {
+          "events": [
+            {
+              "e": "centre"
+            },
+            {
+              "dx": 1600,
+              "dy": -1600,
+              "e": "move"
+            },
+            {
+              "dx": 0,
+              "dy": 64,
+              "e": "scroll"
+            },
+            {
+              "button": "left",
+              "e": "click"
+            },
+            {
+              "button": "left",
+              "e": "click"
+            }
+          ],
+          "plain": "e703008018fcff7f000000003f0000800000000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": -2147483585,
+            "x": -2147482649,
+            "y": 2147482648
+          }
+        }
+      ]
+    },
+    {
+      "name": "lost",
+      "start": {
+        "buttons": 0,
+        "centre": 0,
+        "flags": 0,
+        "left": 0,
+        "right": 0,
+        "scroll_x": 0,
+        "scroll_y": 0,
+        "x": 0,
+        "y": 0
+      },
+      "steps": [
+        {
+          "events": [
+            {
+              "e": "engaged",
+              "on": true
+            },
+            {
+              "dx": 64,
+              "dy": 0,
+              "e": "move"
+            }
+          ],
+          "plain": "400000000000000000000000000000000000000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 0,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 64,
+            "y": 0
+          }
+        },
+        {
+          "lost": true,
+          "plain": "800000000000000000000000000000000001000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 1,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 128,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "dx": 128,
+              "dy": 0,
+              "e": "move"
+            },
+            {
+              "button": "left",
+              "e": "click"
+            },
+            {
+              "button": "left",
+              "e": "press"
+            }
+          ],
+          "plain": "c00000000000000000000000000000000102000001000000",
+          "totals": {
+            "buttons": 1,
+            "centre": 0,
+            "flags": 1,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 192,
+            "y": 0
+          }
+        },
+        {
+          "lost": true,
+          "plain": "c00000000000000000000000000000000002000001000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 1,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 192,
+            "y": 0
+          }
+        },
+        {
+          "events": [
+            {
+              "button": "left",
+              "e": "release"
+            },
+            {
+              "e": "engaged",
+              "on": false
+            }
+          ],
+          "plain": "c00000000000000000000000000000000002000000000000",
+          "totals": {
+            "buttons": 0,
+            "centre": 0,
+            "flags": 0,
+            "left": 2,
+            "right": 0,
+            "scroll_x": 0,
+            "scroll_y": 0,
+            "x": 192,
+            "y": 0
+          }
         }
       ]
     }
-  ]
+  ],
+  "refused": [
+    "K7WDX2A",
+    "K7WDX2ABC",
+    "K7WDX2A1",
+    "K7WDX2AO",
+    "K7WDX2AI",
+    "K7WD_X2AB"
+  ],
+  "version": 1
 }

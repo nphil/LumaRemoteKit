@@ -57,9 +57,9 @@ While the remote is open and the phone isn't playing sound, the phone's volume b
 
 ## Tests
 
-`swift test` runs on macOS and on Linux, where the core builds against swift-crypto. The protocol tests check the codec, the
-handshake and the datagrams against `Tests/LumaRemoteCoreTests/vectors.json`; CI compares that file with the copy LumaTV's Rust
-test client publishes, so protocol drift fails the run.
+`swift test` runs on macOS and on Linux, where the core builds against swift-crypto. `Tests/LumaRemoteCoreTests/vectors.json`
+is LumaTV's `helper/remote/tests/vectors.json`, copied verbatim: the protocol tests check pairing codes and keys, the handshake,
+frames, datagrams and pointer events against it, and CI fails when LumaTV's copy changes.
 
 ## License
 
