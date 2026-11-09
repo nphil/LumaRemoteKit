@@ -115,7 +115,7 @@ extension View {
         accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(label))
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction(action)
+            .accessibilityAction(.default, action)
             .accessibilityShowsLargeContentViewer { Label(label, systemImage: symbol) }
     }
 }
