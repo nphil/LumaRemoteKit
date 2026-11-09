@@ -99,7 +99,7 @@ private struct RemoteScreen: View {
         .tint(theme.palette.accent)
         .background {
             if model.settings.volumeButtons, model.connection == .connected {
-                VolumeButtonCatcher { model.tap($0) }
+                VolumeButtonCatcher { model.volumeButton($0) }
                     .frame(width: 1, height: 1)
             }
         }
@@ -179,6 +179,7 @@ private struct TopBar: View {
         let palette = theme.palette
         switch model.connection {
         case .none, .offline: return palette.ink3
+        case .incompatible: return palette.danger
         case .connecting: return palette.warning
         case .connected: return model.state.power == .standby ? palette.warning : palette.positive
         case .unpaired: return palette.danger
@@ -194,6 +195,7 @@ extension RemoteModel {
         case .connecting: "Connecting"
         case .connected: state.power == .standby ? "Standby" : "Connected"
         case .offline: "Off or out of reach"
+        case .incompatible: "The TV answered in a way this app doesn't understand. Update Marquee or LumaTV."
         case .unpaired: "Needs pairing"
         }
     }
@@ -239,6 +241,7 @@ private struct StatusBanner: View {
         }
         switch model.connection {
         case .offline: return ("\(name) is off or out of reach.", "Wake", { model.wake() })
+        case .incompatible: return ("\(name) answered in a way this app doesn't understand. Update Marquee or LumaTV.", "Retry", { model.wake() })
         case .unpaired: return ("\(name) no longer knows this phone.", "Pair again", onPair)
         case .connected where model.state.power == .standby: return ("\(name) is in standby.", "Turn on", { model.power() })
         default: return nil

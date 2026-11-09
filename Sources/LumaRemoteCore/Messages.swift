@@ -107,7 +107,7 @@ public enum TVAction: Sendable, Hashable {
     case tune(channel: ItemID)
     case launch(app: ItemID)
     /// The receiver's level; needs the receiver plugin.
-    case volume(level: Int)
+    case volume(level: Double)
     case power(on: Bool)
 
     /// The protocol name, as `state.acts` lists it.
@@ -241,6 +241,28 @@ struct Member: CodingKey {
     init?(intValue: Int) { nil }
 }
 
+extension KeyedDecodingContainer where Key == Member {
+    /// A whole number the TV may have written as a float (`3.0`): rounded to nearest, halves away from zero.
+    /// A member of the wrong type is nil, so one bad member never fails the message around it.
+    func lenientInt(_ name: String) -> Int? {
+        let key = Member(name)
+        if let whole = try? decodeIfPresent(Int.self, forKey: key) { return whole }
+        guard let real = try? decodeIfPresent(Double.self, forKey: key), real.isFinite,
+              abs(real) < 1e15 else { return nil }
+        return Int(real.rounded())
+    }
+
+    /// A number written as an int or a float (the receiver's level moves in 0.5 steps).
+    func lenientDouble(_ name: String) -> Double? {
+        guard let real = try? decodeIfPresent(Double.self, forKey: Member(name)), real.isFinite else { return nil }
+        return real
+    }
+
+    func lenient<T: Decodable>(_ type: T.Type, _ name: String) -> T? {
+        (try? decodeIfPresent(type, forKey: Member(name))) ?? nil
+    }
+}
+
 // MARK: TV to phone
 
 public struct TVInfo: Sendable, Hashable, Codable {
@@ -282,6 +304,17 @@ public struct IMEState: Sendable, Hashable, Decodable {
     /// Whether the field holds any text.
     public var text: Bool?
 
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: Member.self)
+        active = try c.decode(Bool.self, forKey: Member("active"))
+        owner = c.lenient(String.self, "owner")
+        purpose = c.lenientInt("purpose")
+        hint = c.lenientInt("hint")
+        enter = c.lenientInt("enter")
+        max = c.lenientInt("max")
+        text = c.lenient(Bool.self, "text")
+    }
+
     public static let inactive = IMEState(active: false)
 
     public init(active: Bool, owner: String? = nil, purpose: Int? = nil, hint: Int? = nil, enter: Int? = nil, max: Int? = nil, text: Bool? = nil) {
@@ -304,14 +337,36 @@ public struct IMEState: Sendable, Hashable, Decodable {
 }
 
 public struct VolumeState: Sendable, Hashable, Decodable {
+    /// The Denon's display: whole numbers bare, halves with one decimal (`51`, `50.5`).
+    public static func format(_ value: Double) -> String {
+        value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
+    }
+
     /// `receiver` or `tv`.
     public var via: String?
-    public var level: Int?
-    public var max: Int?
+    /// The receiver's level and ceiling, in 0.5 steps.
+    public var level: Double?
+    public var max: Double?
     public var muted: Bool?
+
+    public init(via: String? = nil, level: Double? = nil, max: Double? = nil, muted: Bool? = nil) {
+        self.via = via
+        self.level = level
+        self.max = max
+        self.muted = muted
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: Member.self)
+        via = c.lenient(String.self, "via")
+        level = c.lenientDouble("level")
+        max = c.lenientDouble("max")
+        muted = c.lenient(Bool.self, "muted")
+    }
 }
 
-/// The members of `state` that changed; `welcome` carries all of them.
+/// The members of `state` that changed; `welcome` carries all of them. A member that does not decode is
+/// dropped (left unchanged on the phone) rather than failing the message.
 public struct TVStateUpdate: Sendable, Hashable, Decodable {
     public var power: PowerState?
     /// The webOS id of the app holding keyboard focus; empty while LumaTV's own layer has it.
@@ -320,6 +375,23 @@ public struct TVStateUpdate: Sendable, Hashable, Decodable {
     public var volume: VolumeState?
     /// The `act.do` names that work right now.
     public var acts: [String]?
+
+    public init(power: PowerState? = nil, fg: String? = nil, ime: IMEState? = nil, volume: VolumeState? = nil, acts: [String]? = nil) {
+        self.power = power
+        self.fg = fg
+        self.ime = ime
+        self.volume = volume
+        self.acts = acts
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: Member.self)
+        power = c.lenient(PowerState.self, "power")
+        fg = c.lenient(String.self, "fg")
+        ime = c.lenient(IMEState.self, "ime")
+        volume = c.lenient(VolumeState.self, "volume")
+        acts = c.lenient([String].self, "acts")
+    }
 }
 
 /// The phone's picture of the TV, kept up to date from `welcome` and `state`.

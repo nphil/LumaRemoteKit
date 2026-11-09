@@ -44,6 +44,8 @@ public final class RemoteModel {
         case connected
         /// The TV is off or out of reach; retrying.
         case offline
+        /// The TV's messages could not be decoded; `incompatibility` has the error.
+        case incompatible
         /// The TV removed this phone, so it has to pair again.
         case unpaired
     }
@@ -68,6 +70,8 @@ public final class RemoteModel {
     public private(set) var current: PairedTV?
     public private(set) var connection = Connection.none
     public private(set) var state = TVState()
+    /// The decode error behind `.incompatible`, for Diagnostics.
+    public private(set) var incompatibility: String?
     /// The TV theme's accent as `#rrggbb`, once a session is open.
     public private(set) var tvAccent: String?
     public private(set) var discovered: [TVAdvertisement] = []
@@ -255,9 +259,10 @@ public final class RemoteModel {
         case .status(let status):
             switch status {
             case .connecting: connection = .connecting
-            case .connected: connection = .connected
-            case .offline: connection = .offline
-            case .rejected, .revoked: connection = .unpaired
+            case .connected: connection = .connected; incompatibility = nil
+            case .offline: connection = .offline; incompatibility = nil
+            case .incompatible(let detail): connection = .incompatible; incompatibility = detail
+            case .rejected, .revoked: connection = .unpaired; incompatibility = nil
             case .stopped: return
             }
             if status != .connected {
@@ -322,6 +327,19 @@ public final class RemoteModel {
             return false
         }
         return true
+    }
+
+    /// The phone's own volume buttons: 0.5 steps of the receiver's level when the TV offers it, else the TV's key.
+    public func volumeButton(_ key: RemoteKey) {
+        guard key == .volumeUp || key == .volumeDown,
+              let volume = state.volume, volume.via == "receiver", let level = volume.level, let ceiling = volume.max,
+              state.allows(.volume(level: 0))
+        else { return tap(key) }
+        let target = min(max(level + (key == .volumeUp ? 0.5 : -0.5), 0), ceiling)
+        guard target != level else { return }
+        // Optimistic, so quick presses accumulate before the TV's state arrives.
+        state.volume?.level = target
+        Task { await perform(.volume(level: target)) }
     }
 
     public func tap(_ key: RemoteKey) {

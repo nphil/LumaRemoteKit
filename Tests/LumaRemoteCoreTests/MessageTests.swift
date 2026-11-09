@@ -14,6 +14,7 @@ private func object(_ message: ClientMessage) throws -> NSDictionary {
     #expect(try object(.act(id: 5, .power(on: false))) == ["t": "act", "id": 5, "do": "power", "to": "off"])
     #expect(try object(.act(id: 6, .settings(page: nil))) == ["t": "act", "id": 6, "do": "settings"])
     #expect(try object(.get(id: 7, .channels)) == ["t": "get", "id": 7, "what": "channels"])
+    #expect(try object(.act(id: 8, .volume(level: 50.5))) == ["t": "act", "id": 8, "do": "volume", "level": 50.5])
     let phone = PhoneInfo(name: "  Kitchen  ", model: "iPhone17,1", app: "Marquee 0.1")
     #expect(try object(.hello(phone, kit: "LumaRemoteKit 1.0.0"))
         == ["t": "hello", "name": "Kitchen", "model": "iPhone17,1", "app": "Marquee 0.1", "kit": "LumaRemoteKit 1.0.0"])
@@ -86,4 +87,30 @@ private func object(_ message: ClientMessage) throws -> NSDictionary {
     accumulator.release(.left)
     accumulator.click(.left)
     #expect(accumulator.report.leftPresses == 2 && accumulator.report.held.isEmpty)
+}
+
+@Test func stateDecodesLeniently() throws {
+    func decode(_ json: String) throws -> ServerMessage { try ServerMessage(json: Data(json.utf8)) }
+    let head = #"{"t":"welcome","v":1,"device":"0123456789abcdef","tv":{"id":"0a010203040506ff","name":"TV","mac":""},"udp":{"session":1,"key":"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI="},"state":"#
+    guard case .welcome(let welcome) = try decode(head + #"{"power":"on","volume":{"via":"receiver","level":50.0,"max":72.5,"muted":false},"ime":{"active":true,"max":3.0}}}"#) else {
+        Issue.record("not a welcome")
+        return
+    }
+    #expect(welcome.state.volume == VolumeState(via: "receiver", level: 50, max: 72.5, muted: false))
+    #expect(welcome.state.ime?.max == 3)
+
+    // One undecodable member is dropped; its siblings and the message survive.
+    guard case .welcome(let partial) = try decode(head + #"{"power":"on","ime":{"active":"yes"},"volume":{"level":"loud","max":72.5},"acts":["home"]}}"#) else {
+        Issue.record("not a welcome")
+        return
+    }
+    #expect(partial.state.ime == nil && partial.state.power == .on && partial.state.acts == ["home"])
+    #expect(partial.state.volume == VolumeState(level: nil, max: 72.5))
+    guard case .state(let update) = try decode(#"{"t":"state","volume":{"level":50.5},"fg":7}"#) else {
+        Issue.record("not a state")
+        return
+    }
+    #expect(update.volume?.level == 50.5 && update.fg == nil)
+    #expect(VolumeState.format(50.5) == "50.5" && VolumeState.format(51) == "51")
+    #expect(throws: DecodingError.self) { try decode(#"{"t":"welcome","v":1}"#) }
 }

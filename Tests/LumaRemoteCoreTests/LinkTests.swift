@@ -108,3 +108,30 @@ private func connected(_ link: TVLink) async -> Welcome? {
     #expect(TVLink.backoff(after: 3) == .seconds(1))
     #expect(TVLink.backoff(after: 9) == .seconds(8))
 }
+
+@Test(.timeLimit(.minutes(1)))
+func aMalformedMemberDoesNotEndTheSession() async throws {
+    let tv = FakeTV()
+    await tv.setWire(volume: ["via": "receiver", "level": 50.5, "max": 72.5, "muted": false], ime: ["active": "yes"])
+    let link = TVLink(tv: try await paired(with: tv), phone: phone, connect: PipeStream.connector(to: tv))
+    let welcome = try #require(await connected(link))
+    #expect(welcome.state.volume?.level == 50.5 && welcome.state.ime == nil)
+    #expect(link.send(.key(.ok, .tap)))
+    await tv.waitFor { $0 == "key ok tap" }
+    await link.stop()
+}
+
+@Test(.timeLimit(.minutes(1)))
+func anUndecodableWelcomeReportsIncompatible() async throws {
+    var configuration = FakeTV.Configuration()
+    configuration.undecodableWelcome = true
+    let tv = FakeTV(configuration)
+    let link = TVLink(tv: try await paired(with: tv), phone: phone, connect: PipeStream.connector(to: tv))
+    await link.start()
+    var detail: String?
+    for await event in link.events {
+        if case .status(.incompatible(let found)) = event { detail = found; break }
+    }
+    #expect(detail?.contains("tv") == true)
+    await link.stop()
+}

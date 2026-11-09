@@ -117,3 +117,40 @@ func refusalsShowAndRevocationUnpairs() async throws {
         #expect(remote.notice?.text == "Pair with the TV again to use it.")
     }
 }
+
+@MainActor
+@Test(.timeLimit(.minutes(1)))
+func phoneVolumeButtonsStepTheReceiverByHalves() async throws {
+    let key = Data(repeating: 9, count: 32)
+    let device = "0102030405060708"
+    let configuration = FakeTV.Configuration()
+    let tv = FakeTV(configuration, phones: [device: key])
+    await tv.setWire(volume: ["via": "receiver", "level": 50, "max": 72.5, "muted": false])
+    let paired = PairedTV(id: configuration.id, name: "TV", mac: configuration.mac, device: device, key: key,
+                          host: "127.0.0.1", port: 18733)
+    await withRemote(for: tv, paired: [paired]) { remote in
+        await until { remote.connection == .connected && remote.state.volume?.level == 50 }
+        remote.volumeButton(.volumeUp)
+        await tv.waitFor { $0 == "act volume level=50.5" }
+        remote.volumeButton(.volumeDown)
+        remote.volumeButton(.volumeDown)
+        await tv.waitFor { $0 == "act volume level=49.5" }
+    }
+}
+
+@MainActor
+@Test(.timeLimit(.minutes(1)))
+func undecodableWelcomeShowsIncompatibleWithTheError() async throws {
+    var configuration = FakeTV.Configuration()
+    configuration.undecodableWelcome = true
+    let key = Data(repeating: 9, count: 32)
+    let device = "0102030405060708"
+    let tv = FakeTV(configuration, phones: [device: key])
+    let paired = PairedTV(id: configuration.id, name: "TV", mac: configuration.mac, device: device, key: key,
+                          host: "127.0.0.1", port: 18733)
+    await withRemote(for: tv, paired: [paired]) { remote in
+        await until { remote.connection == .incompatible }
+        #expect(remote.statusText == "The TV answered in a way this app doesn't understand. Update Marquee or LumaTV.")
+        #expect(remote.incompatibility?.contains("tv") == true)
+    }
+}

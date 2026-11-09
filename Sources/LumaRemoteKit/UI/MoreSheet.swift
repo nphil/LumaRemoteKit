@@ -331,30 +331,30 @@ private struct ReceiverVolume: View {
 
     var body: some View {
         let volume = model.state.volume
-        let maximum = Double(max(volume?.max ?? 100, 1))
+        let maximum = max(volume?.max ?? 100, 1)
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("Receiver volume", systemImage: "hifispeaker")
                 Spacer()
-                Text("\(Int(level))")
+                Text(VolumeState.format(level))
                     .monospacedDigit()
                     .foregroundStyle(theme.palette.ink2)
             }
             .font(theme.font(.subheadline, weight: .medium))
             .foregroundStyle(theme.palette.ink)
-            Slider(value: $level, in: 0...maximum, step: 1) {
+            Slider(value: $level, in: 0...maximum, step: 0.5) {
                 Text("Receiver volume")
             } onEditingChanged: { editing in
                 self.editing = editing
                 if !editing {
-                    let target = Int(level)
+                    let target = level
                     Task { await model.perform(.volume(level: target)) }
                 }
             }
         }
-        .onAppear { level = Double(volume?.level ?? 0) }
+        .onAppear { level = volume?.level ?? 0 }
         .onChange(of: volume?.level) { _, new in
-            if !editing, let new { level = Double(new) }
+            if !editing, let new { level = new }
         }
     }
 }

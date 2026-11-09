@@ -2,7 +2,7 @@ import Foundation
 
 public enum LumaRemote {
     /// The kit's version, sent in `hello`.
-    public static let version = "1.0.0"
+    public static let version = "1.0.3"
 }
 
 /// Connects to a TV address: TCP in the app, a pipe to the fake TV in tests.
@@ -75,6 +75,8 @@ public actor TVLink {
         case connected
         /// Not reachable right now; retrying.
         case offline
+        /// The TV sent a message this kit cannot decode; the detail is the decode error. Retrying.
+        case incompatible(String)
         /// The TV refused this phone's key three times running: it was removed while the phone was away.
         case rejected
         /// The TV removed this phone during the session.
@@ -193,8 +195,10 @@ public actor TVLink {
     private func run() async {
         var failures = 0
         var refusals = 0
+        var undecodable: String?
         while !Task.isCancelled {
-            continuation.yield(.status(failures == 0 ? .connecting : .offline))
+            let waiting: Status = failures == 0 ? .connecting : (undecodable.map { Status.incompatible($0) } ?? .offline)
+            continuation.yield(.status(waiting))
             do {
                 try await session()
                 failures = 0
@@ -209,7 +213,11 @@ public actor TVLink {
                     continuation.yield(.status(.rejected))
                     return
                 }
+            } catch SessionEnd.undecodable(let detail) {
+                undecodable = detail
+                failures += 1
             } catch {
+                undecodable = nil
                 failures += 1
             }
             guard !Task.isCancelled else { return }
@@ -227,6 +235,27 @@ public actor TVLink {
     private enum SessionEnd: Error {
         case revoked
         case unexpectedReply
+        case undecodable(String)
+    }
+
+    private static func receive(_ open: SecureChannel) async throws -> ServerMessage {
+        do {
+            return try await open.receive()
+        } catch let error as DecodingError {
+            throw SessionEnd.undecodable(Self.describe(error))
+        }
+    }
+
+    static func describe(_ error: DecodingError) -> String {
+        func path(_ context: DecodingError.Context) -> String {
+            context.codingPath.map(\.stringValue).joined(separator: ".")
+        }
+        switch error {
+        case .keyNotFound(let key, let context): return "missing \(key.stringValue) at \(path(context))"
+        case .typeMismatch(_, let context), .valueNotFound(_, let context), .dataCorrupted(let context):
+            return "\(context.debugDescription) at \(path(context))"
+        @unknown default: return "\(error)"
+        }
     }
 
     private func session() async throws {
@@ -239,7 +268,7 @@ public actor TVLink {
         }
         try open.send(.hello(phone, kit: "LumaRemoteKit \(LumaRemote.version)"))
         let first = try await withDeadline(.seconds(3), onTimeout: { stream.close() }) {
-            try await open.receive()
+            try await Self.receive(open)
         }
         switch first {
         case .welcome(let welcome):
@@ -278,7 +307,7 @@ public actor TVLink {
             failPending()
         }
         while true {
-            let message = try await open.receive()
+            let message = try await Self.receive(open)
             lastHeard.withLock { $0 = .now }
             try handle(message)
         }

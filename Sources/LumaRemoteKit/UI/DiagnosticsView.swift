@@ -119,6 +119,7 @@ private struct DiagnosticsList: View {
                 Item("Paired", tv.pairedAt.formatted(date: .abbreviated, time: .shortened)),
             ]
         }
+        if let detail = model.incompatibility { rows.append(Item("Decode error", detail)) }
         if model.localNetworkDenied { rows.append(Item("Local Network", "Refused")) }
         rows.append(Item("Kit", LumaRemote.version))
         return rows
@@ -137,8 +138,8 @@ private struct DiagnosticsList: View {
         }
         var volume = "Unknown"
         if let level = state.volume?.level {
-            volume = "\(level)"
-            if let max = state.volume?.max { volume += " of \(max)" }
+            volume = VolumeState.format(level)
+            if let max = state.volume?.max { volume += " of \(VolumeState.format(max))" }
             if state.volume?.muted == true { volume += ", muted" }
             if let via = state.volume?.via { volume += " (\(via))" }
         }

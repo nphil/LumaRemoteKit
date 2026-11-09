@@ -21,6 +21,9 @@ public actor FakeTV {
         public var channels: [(id: String, number: String, name: String)] = [("c1", "1", "BBC One"), ("c2", "2", "BBC Two")]
         public var cameras: [(id: String, name: String)] = [("front", "Front door"), ("garden", "Garden")]
 
+        /// Leaves `tv` out of the welcome, which no phone can decode.
+        public var undecodableWelcome = false
+
         public init() {}
     }
 
@@ -67,6 +70,14 @@ public actor FakeTV {
         ime = active ? ["active": true, "owner": "app", "purpose": purpose, "hint": 0, "enter": enter, "max": 0, "text": false]
             : ["active": false]
         broadcast(["t": "state", "ime": ime])
+    }
+
+    /// Replaces the volume and ime members exactly as given, to send shapes a real TV might.
+    public func setWire(volume: [String: Any]? = nil, ime: [String: Any]? = nil) {
+        var update: [String: Any] = ["t": "state"]
+        if let volume { self.volume = volume; update["volume"] = volume }
+        if let ime { self.ime = ime; update["ime"] = ime }
+        broadcast(update)
     }
 
     public func setPower(standby: Bool) {
@@ -150,12 +161,14 @@ public actor FakeTV {
             sessions[udpSession] = nil
             pointers[udpSession] = nil
         }
-        channel.send([
+        var welcome: [String: Any] = [
             "t": "welcome", "v": 1, "device": device,
             "tv": ["id": configuration.id.description, "name": configuration.name, "mac": configuration.mac, "accent": configuration.accent],
             "udp": ["session": udpSession, "key": udpKey.base64EncodedString()],
             "state": ["power": power, "fg": configuration.foreground, "ime": ime, "volume": volume, "acts": configuration.actions],
-        ])
+        ]
+        if configuration.undecodableWelcome { welcome["tv"] = nil }
+        channel.send(welcome)
         while let message = try? await channel.receive() {
             if !handle(message, on: channel) { return }
         }
