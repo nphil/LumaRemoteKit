@@ -65,7 +65,11 @@ private struct RemoteScreen: View {
             VStack(spacing: 16) {
                 TopBar(onClose: onClose) { sheet = .tvs }
                 StatusBanner { sheet = .pairing }
-                if model.current == nil {
+                // A link the host opened asks to pair here rather than in a sheet: a sheet presented while
+                // the host's full-screen cover is still sliding in takes the cover with it when it closes.
+                if model.invite != nil {
+                    PairingView(model: model) {}
+                } else if model.current == nil {
                     NoTV { sheet = .pairing }
                 } else {
                     ModePicker(mode: $mode)
@@ -102,10 +106,7 @@ private struct RemoteScreen: View {
         .sheet(item: $sheet) { sheet in
             SheetContainer(sheet: sheet) { self.sheet = $0 }
         }
-        .onAppear {
-            model.activate()
-            if model.invite != nil { sheet = .pairing }
-        }
+        .onAppear { model.activate() }
         .onDisappear { model.deactivate() }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -113,9 +114,6 @@ private struct RemoteScreen: View {
             case .background: model.deactivate()
             default: break
             }
-        }
-        .onChange(of: model.invite) { _, invite in
-            if invite != nil { sheet = .pairing }
         }
         // The TV opening a text field brings the keyboard up; closing it takes away only a keyboard it brought.
         .onChange(of: model.state.ime.active) { _, active in

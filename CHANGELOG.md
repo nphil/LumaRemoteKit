@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.0.1
+
+- A pairing link confirms on the remote itself rather than in a sheet, so pairing no longer closes a host's
+  full-screen remote.
+
 ## 1.0.0
 
 First release: protocol v1 of the LumaTV phone remote.
