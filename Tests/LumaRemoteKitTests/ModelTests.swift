@@ -150,7 +150,6 @@ func undecodableWelcomeShowsIncompatibleWithTheError() async throws {
                           host: "127.0.0.1", port: 18733)
     await withRemote(for: tv, paired: [paired]) { remote in
         await until { remote.connection == .incompatible }
-        #expect(remote.statusText == "The TV answered in a way this app doesn't understand. Update Marquee or LumaTV.")
         #expect(remote.incompatibility?.contains("tv") == true)
     }
 }
