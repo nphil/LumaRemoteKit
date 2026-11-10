@@ -74,6 +74,17 @@ private func connected(_ link: TVLink) async -> Welcome? {
 }
 
 #if canImport(Network)
+@Test func abortClosesPendingReceive() async throws {
+    let listener = try await FakeTVListener(tv: FakeTV())
+    defer { listener.stop() }
+    let stream = try await TCPStream.connect(to: .host("127.0.0.1", port: listener.port))
+    stream.abort()
+    await #expect(throws: (any Error).self) {
+        try await stream.receive(maximum: 1)
+    }
+}
+
+
 /// On real sockets the TV hangs up right after its reply, which must still arrive.
 @Test func pairingOverLoopback() async throws {
     let tv = FakeTV()

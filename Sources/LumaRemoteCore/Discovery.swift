@@ -125,16 +125,22 @@ public final class TCPStream: ByteStream {
         return TCPStream(connection)
     }
 
-    public static func connect(to address: TVAddress, timeout: Duration = .seconds(4)) async throws -> TCPStream {
+    public static func connect(to address: TVAddress, timeout: Duration = .seconds(4), requiredInterface: NWInterface? = nil) async throws -> TCPStream {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         tcp.connectionTimeout = max(1, Int(timeout.components.seconds))
         let parameters = NWParameters(tls: nil, tcp: tcp)
         // The TV is on the LAN; a cellular path can only fail slowly.
-        parameters.prohibitedInterfaceTypes = [.cellular]
+        parameters.prohibitedInterfaceTypes = requiredInterface == nil ? [.cellular] : [.cellular, .other]
+        parameters.requiredInterface = requiredInterface
         let connection = NWConnection(to: address.endpoint, using: parameters)
         let stream = TCPStream(connection)
         let settled = Locked(false)
+        let deadline = Task {
+            do { try await Task.sleep(for: timeout) } catch { return }
+            connection.cancel()
+        }
+        defer { deadline.cancel() }
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 @Sendable func settle(_ result: Result<Void, Error>) {
@@ -193,6 +199,9 @@ public final class TCPStream: ByteStream {
             connection.cancel()
         })
     }
+
+    /// Immediately aborts a connection, including an incomplete handshake.
+    public func abort() { connection.cancel() }
 
     public var remoteAddress: (host: String, port: UInt16)? {
         guard case .hostPort(let host, let port) = connection.currentPath?.remoteEndpoint else { return nil }
