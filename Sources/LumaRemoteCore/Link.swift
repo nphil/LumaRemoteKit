@@ -112,6 +112,9 @@ public actor TVLink {
     private let phone: PhoneInfo
     private let connect: Connector
     private var runner: Task<Void, Never>?
+    private let stableAfter: Duration
+    /// When the current session reached the TV's welcome; nil until it does.
+    private var establishedAt: ContinuousClock.Instant?
     private var nextID: UInt32 = 0
     private var actions: [UInt32: CheckedContinuation<Void, Error>] = [:]
     private var lists: [UInt32: (items: [ListItem], continuation: CheckedContinuation<[ListItem], Error>)] = [:]
@@ -122,10 +125,18 @@ public actor TVLink {
     static let requestTimeout: Duration = .seconds(10)
 
     public init(tv: PairedTV, phone: PhoneInfo, connect: @escaping Connector) {
+        self.init(tv: tv, phone: phone, stableAfter: Self.silence, connect: connect)
+    }
+
+    /// `stableAfter` is how long an established session must last for its end to count as a lost
+    /// connection to a reachable TV rather than a failed attempt. `silence` is the window in which the
+    /// keepalive exchange proves a session healthy; a TV that welcomes and drops sooner is backed off.
+    init(tv: PairedTV, phone: PhoneInfo, stableAfter: Duration, connect: @escaping Connector) {
         self.tv = tv
         tvID = tv.id
         self.phone = phone
         self.connect = connect
+        self.stableAfter = stableAfter
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
     }
 
@@ -201,13 +212,12 @@ public actor TVLink {
         var failures = 0
         var refusals = 0
         var undecodable: String?
+        continuation.yield(.status(.connecting))
         while !Task.isCancelled {
-            let waiting: Status = failures == 0 ? .connecting : (undecodable.map { Status.incompatible($0) } ?? .offline)
-            continuation.yield(.status(waiting))
+            establishedAt = nil
             do {
+                // Only ever ends by throwing.
                 try await session()
-                failures = 0
-                refusals = 0
             } catch SessionEnd.revoked {
                 continuation.yield(.status(.revoked))
                 return
@@ -223,12 +233,18 @@ public actor TVLink {
                 failures += 1
             } catch {
                 undecodable = nil
-                failures += 1
+                if let since = establishedAt, ContinuousClock.now - since >= stableAfter {
+                    // The TV was reachable and the session healthy, so this is a new connection, not a failing one.
+                    failures = 0
+                    refusals = 0
+                } else {
+                    failures += 1
+                }
             }
             guard !Task.isCancelled else { return }
-            if failures > 0 {
-                try? await Task.sleep(for: Self.backoff(after: failures))
-            }
+            continuation.yield(.status(failures == 0 ? .connecting : (undecodable.map { Status.incompatible($0) } ?? .offline)))
+            // Never a tight loop: a re-dial after a healthy session still waits the first step.
+            try? await Task.sleep(for: Self.backoff(after: max(failures, 1)))
         }
     }
 
@@ -278,6 +294,7 @@ public actor TVLink {
         switch first {
         case .welcome(let welcome):
             channel.withLock { $0 = open }
+            establishedAt = .now
             if let reached = stream.remoteAddress {
                 tv.host = reached.host
                 tv.port = reached.port

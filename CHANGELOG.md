@@ -6,6 +6,9 @@
 - Bounds connection attempts and supports interface-bound, immediately cancellable presence probes.
 - A closed TCP connection is released only once the peer has hung up too (or after 5 s), so a TV's last
   reply no longer goes missing when the connection was cancelled as soon as its FIN was queued.
+- `TVLink` returns to `.connecting` and resets its backoff when a session that lasted at least 6 s ends, instead
+  of reporting `.offline` for every re-dial and staying at the 8 s backoff after six drops. A session that
+  drops sooner still counts as a failed connection.
 
 ## 1.0.3
 

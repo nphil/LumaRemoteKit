@@ -265,3 +265,97 @@ func anUndecodableWelcomeReportsIncompatible() async throws {
     #expect(detail?.contains("tv") == true)
     await link.stop()
 }
+
+/// Hands the link pipe connections to a fake TV and lets a test hang up the live one or refuse the next.
+private final class Line: Sendable {
+    private let open = Locked<[any ByteStream]>([])
+    private let unreachable = Locked(false)
+    private let dialed = Locked(0)
+    var dials: Int { dialed.withLock { $0 } }
+    let connector: Connector
+
+    init(to tv: FakeTV) {
+        let inner = PipeStream.connector(to: tv)
+        let open = open
+        let unreachable = unreachable
+        let dialed = dialed
+        connector = { address in
+            dialed.withLock { $0 += 1 }
+            if unreachable.withLock({ $0 }) { throw StreamError.unreachable("down") }
+            let stream = try await inner(address)
+            open.withLock { $0.append(stream) }
+            return stream
+        }
+    }
+
+    func hangUp(unreachableAfter: Bool = false) {
+        unreachable.withLock { $0 = unreachableAfter }
+        open.withLock { streams in
+            streams.forEach { $0.close() }
+            streams.removeAll()
+        }
+    }
+}
+
+/// A session that proved itself healthy and then dropped is a lost connection to a reachable TV: the link
+/// dials again as `.connecting`, never `.offline`.
+@Test(.timeLimit(.minutes(1)))
+func anEstablishedSessionThatEndsRedialsAsConnecting() async throws {
+    let tv = FakeTV()
+    let line = Line(to: tv)
+    let link = TVLink(tv: try await paired(with: tv), phone: phone, stableAfter: .zero, connect: line.connector)
+    await link.start()
+    var seen: [TVLink.Status] = []
+    var drops = 0
+    for await event in link.events {
+        guard case .status(let status) = event else { continue }
+        seen.append(status)
+        if status == .connected {
+            drops += 1
+            if drops == 2 { break }
+            line.hangUp()
+        } else if drops == 1, status == .connecting {
+            // Published as soon as the session ends, while the first backoff step is still running.
+            #expect(line.dials == 1)
+        }
+    }
+    await link.stop()
+    #expect(seen == [.connecting, .connected, .connecting, .connected])
+}
+
+/// A TV that welcomes and drops at once is a failing connection: it stays backed off and shows `.offline`.
+@Test(.timeLimit(.minutes(1)))
+func aSessionThatEndsBeforeItIsStableCountsAsAFailure() async throws {
+    let tv = FakeTV()
+    let line = Line(to: tv)
+    let link = TVLink(tv: try await paired(with: tv), phone: phone, stableAfter: .seconds(3600), connect: line.connector)
+    await link.start()
+    var seen: [TVLink.Status] = []
+    for await event in link.events {
+        guard case .status(let status) = event else { continue }
+        seen.append(status)
+        if status == .connected { line.hangUp() }
+        if status == .offline { break }
+    }
+    await link.stop()
+    // The drop counts as a failure, so the next dial is already behind the backoff (250 ms, then doubling).
+    #expect(seen == [.connecting, .connected, .offline])
+}
+
+/// After an established session, a TV that really is unreachable still ends up offline.
+@Test(.timeLimit(.minutes(1)))
+func anUnreachableTVAfterAnEstablishedSessionIsOffline() async throws {
+    let tv = FakeTV()
+    let line = Line(to: tv)
+    let link = TVLink(tv: try await paired(with: tv), phone: phone, stableAfter: .zero, connect: line.connector)
+    await link.start()
+    var seen: [TVLink.Status] = []
+    for await event in link.events {
+        guard case .status(let status) = event else { continue }
+        seen.append(status)
+        if status == .connected { line.hangUp(unreachableAfter: true) }
+        if status == .offline { break }
+    }
+    await link.stop()
+    #expect(seen == [.connecting, .connected, .connecting, .offline])
+}
