@@ -4,6 +4,8 @@
 
 - Exposes the authenticated TV connection path and lets a host manage the remote lifecycle.
 - Bounds connection attempts and supports interface-bound, immediately cancellable presence probes.
+- A closed TCP connection is released only once the peer has hung up too (or after 5 s), so a TV's last
+  reply no longer goes missing when the connection was cancelled as soon as its FIN was queued.
 
 ## 1.0.3
 

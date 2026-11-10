@@ -1,6 +1,9 @@
 import Foundation
 @testable import LumaRemoteCore
 import LumaRemoteFakeTV
+#if canImport(Network)
+import Network
+#endif
 import Testing
 
 private let phone = PhoneInfo(name: "Test iPhone", model: "iPhone17,1", app: "Tests")
@@ -84,6 +87,65 @@ private func connected(_ link: TVLink) async -> Welcome? {
     }
 }
 
+/// Closing ends the owner's pending read at once, whether or not the peer ever hangs up.
+@Test func closeEndsAPendingReceive() async throws {
+    let listener = try await FakeTVListener(tv: FakeTV())
+    defer { listener.stop() }
+    let stream = try await TCPStream.connect(to: .host("127.0.0.1", port: listener.port))
+    let read = Task { try await stream.receive(maximum: 1) }
+    stream.close()
+    await #expect(throws: StreamError.closed) { try await read.value }
+}
+
+/// A TV's last reply before it hangs up reaches the phone, and the TV's connection is released only
+/// once the phone has hung up too, not as soon as the FIN is queued.
+@Test func aClosedConnectionStaysUntilThePeerHangsUp() async throws {
+    let parameters = NWParameters.tcp
+    parameters.requiredInterfaceType = .loopback
+    let listener = try NWListener(using: parameters, on: .any)
+    defer { listener.cancel() }
+    let server = Locked<NWConnection?>(nil)
+    listener.newConnectionHandler = { connection in
+        server.withLock { $0 = connection }
+        let stream = TCPStream.accept(connection)
+        stream.send(Data("paired".utf8))
+        stream.close()
+    }
+    let port: UInt16 = try await withCheckedThrowingContinuation { continuation in
+        listener.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                listener.stateUpdateHandler = nil
+                continuation.resume(returning: listener.port?.rawValue ?? 0)
+            case .failed(let error):
+                listener.stateUpdateHandler = nil
+                continuation.resume(throwing: error)
+            default:
+                break
+            }
+        }
+        listener.start(queue: .global())
+    }
+
+    let phone = try await TCPStream.connect(to: .host("127.0.0.1", port: port))
+    let reply = try await phone.receive(exactly: 6)
+    #expect(reply == Data("paired".utf8))
+    await #expect(throws: StreamError.closed) { try await phone.receive(maximum: 1) }
+    let accepted = try #require(server.withLock { $0 })
+    var stillUp = false
+    if case .ready = accepted.state { stillUp = true }
+    #expect(stillUp, "The TV's side hung up before the phone did")
+
+    phone.close()
+    let released = Locked(false)
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+        @Sendable func finish() {
+            if released.withLock({ done in defer { done = true }; return !done }) { continuation.resume() }
+        }
+        accepted.stateUpdateHandler = { if case .cancelled = $0 { finish() } }
+        if case .cancelled = accepted.state { finish() }
+    }
+}
 
 /// On real sockets the TV hangs up right after its reply, which must still arrive.
 @Test func pairingOverLoopback() async throws {

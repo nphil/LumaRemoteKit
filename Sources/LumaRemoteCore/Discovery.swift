@@ -113,7 +113,19 @@ public enum TVDiscovery {
 
 /// TCP to the TV with Nagle off, so a key goes out the moment it is sealed.
 public final class TCPStream: ByteStream {
+    /// How long a closed connection may wait for the peer's own hang-up before it is released anyway.
+    /// A well-behaved peer hangs up within a round trip (the phone closes as soon as it has read the TV's
+    /// reply); this only bounds a peer that never does.
+    static let linger: TimeInterval = 5
+
+    private struct State {
+        var closed = false
+        var nextReader = 0
+        var readers: [Int: CheckedContinuation<Data, Error>] = [:]
+    }
+
     private let connection: NWConnection
+    private let state = Locked(State())
 
     private init(_ connection: NWConnection) {
         self.connection = connection
@@ -180,7 +192,16 @@ public final class TCPStream: ByteStream {
 
     public func receive(maximum: Int) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
-            connection.receive(minimumIncompleteLength: 1, maximumLength: maximum) { data, _, _, _ in
+            let reader: Int? = state.withLock { state in
+                guard !state.closed else { return nil }
+                state.nextReader += 1
+                state.readers[state.nextReader] = continuation
+                return state.nextReader
+            }
+            guard let reader else { return continuation.resume(throwing: StreamError.closed) }
+            connection.receive(minimumIncompleteLength: 1, maximumLength: maximum) { [state] data, _, _, _ in
+                // Nil once close() has already ended this read.
+                guard let continuation = state.withLock({ $0.readers.removeValue(forKey: reader) }) else { return }
                 // Data comes before any end-of-stream or error reported with it.
                 if let data, !data.isEmpty {
                     continuation.resume(returning: data)
@@ -191,13 +212,39 @@ public final class TCPStream: ByteStream {
         }
     }
 
-    /// Sends what is still queued, then ends the connection: `cancel()` alone drops queued sends, such as
-    /// a TV's last reply before it hangs up.
+    /// Ends the stream for its owner at once: pending reads throw `StreamError.closed`. The connection
+    /// itself is released only once the peer has hung up too, as a kernel socket would: a FIN goes out
+    /// after what is still queued, and `cancel()` waits for the peer's FIN (or `linger`). Cancelling as
+    /// soon as the FIN is queued let a TV's last reply, already handed to the stack, go missing on the
+    /// phone every so often.
     public func close() {
+        let readers: [CheckedContinuation<Data, Error>]? = state.withLock { state in
+            guard !state.closed else { return nil }
+            state.closed = true
+            defer { state.readers.removeAll() }
+            return Array(state.readers.values)
+        }
+        guard let readers else { return }
+        for reader in readers { reader.resume(throwing: StreamError.closed) }
         guard case .ready = connection.state else { return connection.cancel() }
-        connection.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed { [connection] _ in
-            connection.cancel()
+        let connection = connection
+        connection.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed { error in
+            if error != nil { return connection.cancel() }
+            Self.drain(connection)
         })
+        // Calls to cancel() after the first are ignored, so the cap and the drain do not conflict.
+        DispatchQueue.global().asyncAfter(deadline: .now() + Self.linger) { connection.cancel() }
+    }
+
+    /// Reads and discards until the peer hangs up, then releases the connection.
+    private static func drain(_ connection: NWConnection) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
+            if isComplete || error != nil || data == nil {
+                connection.cancel()
+            } else {
+                Self.drain(connection)
+            }
+        }
     }
 
     /// Immediately aborts a connection, including an incomplete handshake.
