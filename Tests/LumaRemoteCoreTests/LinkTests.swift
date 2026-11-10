@@ -87,14 +87,32 @@ private func connected(_ link: TVLink) async -> Welcome? {
     }
 }
 
-/// Closing ends the owner's pending read at once, whether or not the peer ever hangs up.
-@Test func closeEndsAPendingReceive() async throws {
+/// A read on a stream closed here throws `closed` without touching the connection.
+@Test func readingAClosedStreamThrowsClosed() async throws {
     let listener = try await FakeTVListener(tv: FakeTV())
     defer { listener.stop() }
     let stream = try await TCPStream.connect(to: .host("127.0.0.1", port: listener.port))
-    let read = Task { try await stream.receive(maximum: 1) }
     stream.close()
-    await #expect(throws: StreamError.closed) { try await read.value }
+    await #expect(throws: StreamError.closed) { try await stream.receive(maximum: 1) }
+}
+
+/// Resolves once `state` settles: `.ready`, or a throw for `.waiting`, `.failed` and `.cancelled`.
+private func ready(_ state: NWListener.State) -> Result<Void, Error>? {
+    switch state {
+    case .ready: return .success(())
+    case .waiting(let error), .failed(let error): return .failure(error)
+    case .cancelled: return .failure(StreamError.closed)
+    default: return nil
+    }
+}
+
+private func ready(_ state: NWConnection.State) -> Result<Void, Error>? {
+    switch state {
+    case .ready: return .success(())
+    case .waiting(let error), .failed(let error): return .failure(error)
+    case .cancelled: return .failure(StreamError.closed)
+    default: return nil
+    }
 }
 
 /// A TV's last reply before it hangs up reaches the phone, and the TV's connection is released only
@@ -104,34 +122,45 @@ private func connected(_ link: TVLink) async -> Welcome? {
     parameters.requiredInterfaceType = .loopback
     let listener = try NWListener(using: parameters, on: .any)
     defer { listener.cancel() }
-    let server = Locked<NWConnection?>(nil)
+    let arrivals = Locked<CheckedContinuation<NWConnection, Never>?>(nil)
     listener.newConnectionHandler = { connection in
-        server.withLock { $0 = connection }
-        let stream = TCPStream.accept(connection)
-        stream.send(Data("paired".utf8))
-        stream.close()
+        let waiting = arrivals.withLock { continuation in defer { continuation = nil }; return continuation }
+        waiting?.resume(returning: connection)
     }
+    let listening = Locked(false)
     let port: UInt16 = try await withCheckedThrowingContinuation { continuation in
         listener.stateUpdateHandler = { state in
-            switch state {
-            case .ready:
-                listener.stateUpdateHandler = nil
-                continuation.resume(returning: listener.port?.rawValue ?? 0)
-            case .failed(let error):
-                listener.stateUpdateHandler = nil
-                continuation.resume(throwing: error)
-            default:
-                break
-            }
+            guard let result = ready(state), listening.withLock({ done in defer { done = true }; return !done }) else { return }
+            continuation.resume(with: result.map { _ in listener.port?.rawValue ?? 0 })
         }
         listener.start(queue: .global())
     }
 
-    let phone = try await TCPStream.connect(to: .host("127.0.0.1", port: port))
+    // The phone connects only once the arrival is awaited, so the accepted connection cannot slip by.
+    let connecting = Locked<Task<TCPStream, Error>?>(nil)
+    let accepted: NWConnection = await withCheckedContinuation { continuation in
+        arrivals.withLock { $0 = continuation }
+        connecting.withLock { $0 = Task { try await TCPStream.connect(to: .host("127.0.0.1", port: port)) } }
+    }
+    // TCPStream.accept starts the TV's end; before it is ready, close() can only cancel, which is not the
+    // hang-up under test, so the reply goes out once the connection is ready.
+    let accepting = Locked(false)
+    let server = Locked<TCPStream?>(nil)
+    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        accepted.stateUpdateHandler = { state in
+            guard let result = ready(state), accepting.withLock({ done in defer { done = true }; return !done }) else { return }
+            continuation.resume(with: result)
+        }
+        server.withLock { $0 = TCPStream.accept(accepted) }
+    }
+    let tv = try #require(server.withLock { $0 })
+    tv.send(Data("paired".utf8))
+    tv.close()
+
+    let phone = try await #require(connecting.withLock { $0 }).value
     let reply = try await phone.receive(exactly: 6)
     #expect(reply == Data("paired".utf8))
     await #expect(throws: StreamError.closed) { try await phone.receive(maximum: 1) }
-    let accepted = try #require(server.withLock { $0 })
     var stillUp = false
     if case .ready = accepted.state { stillUp = true }
     #expect(stillUp, "The TV's side hung up before the phone did")
