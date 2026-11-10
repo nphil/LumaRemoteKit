@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Exposes the authenticated TV connection path and lets a host manage the remote lifecycle.
+- Bounds connection attempts and supports interface-bound, immediately cancellable presence probes.
 
 ## 1.0.3
 
