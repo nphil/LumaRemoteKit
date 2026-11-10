@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exposes the authenticated TV connection path and lets a host manage the remote lifecycle.
+
 ## 1.0.3
 
 - The receiver's volume level and ceiling are numbers in 0.5 steps (`50.5`), shown with one decimal only when

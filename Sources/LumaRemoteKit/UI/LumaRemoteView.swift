@@ -8,14 +8,16 @@ import SwiftUI
 public struct LumaRemoteView: View {
     private let model: RemoteModel
     private let onClose: () -> Void
+    private let managesLifecycle: Bool
 
-    public init(model: RemoteModel, onClose: @escaping () -> Void) {
+    public init(model: RemoteModel, managesLifecycle: Bool = true, onClose: @escaping () -> Void) {
         self.model = model
+        self.managesLifecycle = managesLifecycle
         self.onClose = onClose
     }
 
     public var body: some View {
-        RemoteScreen(onClose: onClose)
+        RemoteScreen(onClose: onClose, managesLifecycle: managesLifecycle)
             .environment(model)
     }
 }
@@ -47,6 +49,7 @@ enum RemoteSheet: String, Identifiable {
 
 private struct RemoteScreen: View {
     let onClose: () -> Void
+    let managesLifecycle: Bool
 
     @Environment(RemoteModel.self) private var model
     @Environment(\.lumaRemoteTheme) private var theme
@@ -106,9 +109,10 @@ private struct RemoteScreen: View {
         .sheet(item: $sheet) { sheet in
             SheetContainer(sheet: sheet) { self.sheet = $0 }
         }
-        .onAppear { model.activate() }
-        .onDisappear { model.deactivate() }
+        .onAppear { if managesLifecycle { model.activate() } }
+        .onDisappear { if managesLifecycle { model.deactivate() } }
         .onChange(of: scenePhase) { _, phase in
+            guard managesLifecycle else { return }
             switch phase {
             case .active: model.activate()
             case .background: model.deactivate()

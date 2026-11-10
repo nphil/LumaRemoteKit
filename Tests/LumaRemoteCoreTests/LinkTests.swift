@@ -5,6 +5,34 @@ import Testing
 
 private let phone = PhoneInfo(name: "Test iPhone", model: "iPhone17,1", app: "Tests")
 
+private final class PathStream: ByteStream {
+    let stream: any ByteStream
+    let connectionPath: ConnectionPath?
+    init(_ stream: any ByteStream, path: ConnectionPath) {
+        self.stream = stream
+        connectionPath = path
+    }
+    var remoteAddress: (host: String, port: UInt16)? { stream.remoteAddress }
+    func send(_ bytes: Data) { stream.send(bytes) }
+    func receive(maximum: Int) async throws -> Data { try await stream.receive(maximum: maximum) }
+    func close() { stream.close() }
+}
+
+@Test func onlyAnAuthenticatedLiveSessionExposesItsPath() async throws {
+    let tv = FakeTV()
+    let pairedTV = try await paired(with: tv)
+    let expected = ConnectionPath(localAddress: "192.168.1.10", remoteAddress: "192.168.1.20", usesWiFi: true, usesOther: false)
+    let connector = PipeStream.connector(to: tv)
+    let link = TVLink(tv: pairedTV, phone: phone, connect: { address in
+        PathStream(try await connector(address), path: expected)
+    })
+    #expect(link.connectionPath == nil)
+    _ = try #require(await connected(link))
+    #expect(link.connectionPath == expected)
+    await link.stop()
+    #expect(link.connectionPath == nil)
+}
+
 private func paired(with tv: FakeTV) async throws -> PairedTV {
     let configuration = await tv.configuration
     return try await Pairing.pair(address: .host("127.0.0.1", port: 18733), tv: configuration.id, code: configuration.code,

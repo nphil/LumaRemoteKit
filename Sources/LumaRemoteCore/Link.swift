@@ -160,6 +160,11 @@ public actor TVLink {
 
     public nonisolated var isConnected: Bool { channel.withLock { $0 != nil } }
 
+    /// Path of the authenticated session only; never a pending or failed connection.
+    public nonisolated var connectionPath: ConnectionPath? {
+        channel.withLock { $0?.stream.connectionPath }
+    }
+
     /// Runs a LumaTV action and waits for the TV's `done`.
     public func perform(_ action: TVAction) async throws {
         let open = try openChannel()

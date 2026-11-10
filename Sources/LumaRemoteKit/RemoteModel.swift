@@ -69,6 +69,8 @@ public final class RemoteModel {
     public private(set) var tvs: [PairedTV] = []
     public private(set) var current: PairedTV?
     public private(set) var connection = Connection.none
+    /// The path to the paired TV, only while the authenticated session is open.
+    public var connectionPath: ConnectionPath? { connection == .connected ? link?.connectionPath : nil }
     public private(set) var state = TVState()
     /// The decode error behind `.incompatible`, for Diagnostics.
     public private(set) var incompatibility: String?

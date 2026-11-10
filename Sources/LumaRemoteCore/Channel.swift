@@ -53,9 +53,26 @@ public protocol ByteStream: AnyObject, Sendable {
     func close()
     /// The other end's address once connected, for the pointer datagrams and Wake-on-LAN.
     var remoteAddress: (host: String, port: UInt16)? { get }
+    /// The actual connection path, when the transport can report it.
+    var connectionPath: ConnectionPath? { get }
+}
+
+public struct ConnectionPath: Sendable, Equatable {
+    public let localAddress: String
+    public let remoteAddress: String
+    public let usesWiFi: Bool
+    public let usesOther: Bool
+
+    public init(localAddress: String, remoteAddress: String, usesWiFi: Bool, usesOther: Bool) {
+        self.localAddress = localAddress
+        self.remoteAddress = remoteAddress
+        self.usesWiFi = usesWiFi
+        self.usesOther = usesOther
+    }
 }
 
 extension ByteStream {
+    public var connectionPath: ConnectionPath? { nil }
     /// Exactly `count` bytes, or a throw if the stream ends first.
     public func receive(exactly count: Int) async throws -> Data {
         var bytes = Data(capacity: count)

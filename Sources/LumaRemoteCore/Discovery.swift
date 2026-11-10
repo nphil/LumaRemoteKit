@@ -198,6 +198,14 @@ public final class TCPStream: ByteStream {
         guard case .hostPort(let host, let port) = connection.currentPath?.remoteEndpoint else { return nil }
         return (host.text, port.rawValue)
     }
+
+    public var connectionPath: ConnectionPath? {
+        guard let path = connection.currentPath, path.status == .satisfied,
+              case .hostPort(let local, _) = path.localEndpoint,
+              case .hostPort(let remote, _) = path.remoteEndpoint else { return nil }
+        return ConnectionPath(localAddress: local.text, remoteAddress: remote.text,
+                              usesWiFi: path.usesInterfaceType(.wifi), usesOther: path.usesInterfaceType(.other))
+    }
 }
 
 /// The pointer channel's UDP socket, connected to the TV's address and port.
