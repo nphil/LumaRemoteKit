@@ -323,7 +323,8 @@ func anEstablishedSessionThatEndsRedialsAsConnecting() async throws {
     #expect(seen == [.connecting, .connected, .connecting, .connected])
 }
 
-/// A TV that welcomes and drops at once is a failing connection: it stays backed off and shows `.offline`.
+/// A TV that welcomes and drops at once is a failing connection: one such drop reads as a retry, the second
+/// in a row as `.offline`.
 @Test(.timeLimit(.minutes(1)))
 func aSessionThatEndsBeforeItIsStableCountsAsAFailure() async throws {
     let tv = FakeTV()
@@ -338,8 +339,8 @@ func aSessionThatEndsBeforeItIsStableCountsAsAFailure() async throws {
         if status == .offline { break }
     }
     await link.stop()
-    // The drop counts as a failure, so the next dial is already behind the backoff (250 ms, then doubling).
-    #expect(seen == [.connecting, .connected, .offline])
+    // Each drop counts as a failure; the first re-dial reads as Connecting, the second failure as Offline.
+    #expect(seen == [.connecting, .connected, .connecting, .connected, .offline])
 }
 
 /// After an established session, a TV that really is unreachable still ends up offline.

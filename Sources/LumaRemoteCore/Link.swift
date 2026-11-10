@@ -213,6 +213,7 @@ public actor TVLink {
         var refusals = 0
         var undecodable: String?
         continuation.yield(.status(.connecting))
+        var shown: Status = .connecting
         while !Task.isCancelled {
             establishedAt = nil
             do {
@@ -242,7 +243,13 @@ public actor TVLink {
                 }
             }
             guard !Task.isCancelled else { return }
-            continuation.yield(.status(failures == 0 ? .connecting : (undecodable.map { Status.incompatible($0) } ?? .offline)))
+            // One failed dial is not proof the TV is off (a Wi-Fi hiccup or a TV still waking); Offline waits for a
+            // second in a row, so a single retry reads as Connecting instead of flashing Offline.
+            let next: Status = undecodable.map { Status.incompatible($0) } ?? (failures < 2 ? .connecting : .offline)
+            if establishedAt != nil || next != shown {
+                continuation.yield(.status(next))
+                shown = next
+            }
             // Never a tight loop: a re-dial after a healthy session still waits the first step.
             try? await Task.sleep(for: Self.backoff(after: max(failures, 1)))
         }
