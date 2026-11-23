@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 1.0.4
+
+- Builds for Android: the device model lookup imports the platform C module (`Android`, `Glibc` or `Darwin`).
 - Exposes the authenticated TV connection path and lets a host manage the remote lifecycle.
 - Bounds connection attempts and supports interface-bound, immediately cancellable presence probes.
 - A closed TCP connection is released only once the peer has hung up too (or after 5 s), so a TV's last

@@ -6,6 +6,13 @@ import CryptoKit
 import Crypto
 #endif
 import Foundation
+#if canImport(Android)
+import Android
+#elseif canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#endif
 
 /// A TV's id: 8 random bytes the TV made when its phone-remote plugin was first switched on, written as
 /// 16 lowercase hex digits.
